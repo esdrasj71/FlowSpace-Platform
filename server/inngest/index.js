@@ -1,18 +1,17 @@
 import { Inngest } from "inngest";
 import prisma from "../configs/prisma.js";
+import sendEmail from "../configs/nodemailer.js";
 
 export const inngest = new Inngest({ id: "my-FlowSpace" });
 
-// ✅ CORRECT: User Creation
 const syncUserCreation = inngest.createFunction(
     { 
         id: 'sync-user-from-clerk',
-        triggers: [{ event: 'clerk/user.created' }]  // ✅ Array syntax
+        triggers: [{ event: 'clerk/user.created' }] 
     },
     async ({ event }) => {
         try {
             const { data } = event;
-            console.log('🔄 Syncing user creation:', data.id);
             
             await prisma.user.create({
                 data: {
@@ -22,45 +21,40 @@ const syncUserCreation = inngest.createFunction(
                     image: data?.image_url || '',
                 }
             });
-            console.log('✅ User created successfully');
             return { success: true, userId: data.id };
         } catch (error) {
-            console.error('❌ Failed to create user:', error);
+            console.error('Failed to create user:', error);
             throw error;
         }
     }
 );
 
-// ✅ CORRECT: User Deletion
 const syncUserDeletion = inngest.createFunction(
     { 
         id: 'delete-user-from-clerk',
-        triggers: [{ event: 'clerk/user.deleted' }]  // ✅ Array syntax
+        triggers: [{ event: 'clerk/user.deleted' }]  
     },
     async ({ event }) => {
         try {
             const { data } = event;
-            console.log('🔄 Syncing user deletion:', data.id);
             
             await prisma.user.delete({
                 where: {
                     id: data.id,
                 }
             });
-            console.log('✅ User deleted successfully');
             return { success: true, userId: data.id };
         } catch (error) {
-            console.error('❌ Failed to delete user:', error);
+            console.error('Failed to delete user:', error);
             throw error;
         }
     }
 );
 
-// ✅ CORRECT: User Update
 const syncUserUpdation = inngest.createFunction(
     { 
         id: 'update-user-from-clerk',
-        triggers: [{ event: 'clerk/user.updated' }]  // ✅ Array syntax
+        triggers: [{ event: 'clerk/user.updated' }]  
     },
     async ({ event }) => {
         try {
@@ -77,25 +71,22 @@ const syncUserUpdation = inngest.createFunction(
                     image: data?.image_url || '',
                 }
             });
-            console.log('✅ User updated successfully');
             return { success: true, userId: data.id };
         } catch (error) {
-            console.error('❌ Failed to update user:', error);
+            console.error('Failed to update user:', error);
             throw error;
         }
     }
 );
 
-// ✅ FIXED: Workspace Creation
 const syncWorkspaceCreation = inngest.createFunction(
     { 
         id: 'sync-workspace-from-clerk',
-        triggers: [{ event: 'clerk/organization.created' }]  // ✅ Fixed: triggers array
+        triggers: [{ event: 'clerk/organization.created' }]  
     },
     async ({ event }) => {
         try {
             const { data } = event;
-            console.log('🔄 Syncing workspace creation:', data.id);
             
             await prisma.workspace.create({
                 data: {
@@ -116,25 +107,22 @@ const syncWorkspaceCreation = inngest.createFunction(
                 }
             });
             
-            console.log('✅ Workspace created successfully');
             return { success: true, workspaceId: data.id };
         } catch (error) {
-            console.error('❌ Failed to create workspace:', error);
+            console.error('Failed to create workspace:', error);
             throw error;
         }
     }
 );
 
-// ✅ FIXED: Workspace Update
 const syncWorkspaceUpdation = inngest.createFunction(
     { 
         id: 'update-workspace-from-clerk',
-        triggers: [{ event: 'clerk/organization.updated' }]  // ✅ Fixed: triggers array
+        triggers: [{ event: 'clerk/organization.updated' }]  
     },
     async ({ event }) => {
         try {
             const { data } = event;
-            console.log('🔄 Syncing workspace update:', data.id);
             
             await prisma.workspace.update({
                 where: {
@@ -147,25 +135,22 @@ const syncWorkspaceUpdation = inngest.createFunction(
                 }
             });
             
-            console.log('✅ Workspace updated successfully');
             return { success: true, workspaceId: data.id };
         } catch (error) {
-            console.error('❌ Failed to update workspace:', error);
+            console.error('Failed to update workspace:', error);
             throw error;
         }
     }
 );
 
-// ✅ FIXED: Workspace Deletion
 const syncWorkspaceDeletion = inngest.createFunction(
     { 
         id: 'delete-workspace-from-clerk',
-        triggers: [{ event: 'clerk/organization.deleted' }]  // ✅ Fixed: triggers array
+        triggers: [{ event: 'clerk/organization.deleted' }]  
     },
     async ({ event }) => {
         try {
             const { data } = event;
-            console.log('🔄 Syncing workspace deletion:', data.id);
             
             await prisma.workspace.delete({
                 where: {
@@ -173,25 +158,22 @@ const syncWorkspaceDeletion = inngest.createFunction(
                 }
             });
             
-            console.log('✅ Workspace deleted successfully');
             return { success: true, workspaceId: data.id };
         } catch (error) {
-            console.error('❌ Failed to delete workspace:', error);
+            console.error('Failed to delete workspace:', error);
             throw error;
         }
     }
 );
 
-// ✅ FIXED: Workspace Member Creation
 const syncWorkspaceMemberCreation = inngest.createFunction(
     { 
         id: 'sync-workspace-member-from-clerk',
-        triggers: [{ event: 'clerk/organizationInvitation.accepted' }]  // ✅ Fixed: triggers array
+        triggers: [{ event: 'clerk/organizationInvitation.accepted' }]  
     },
     async ({ event }) => {
         try {
             const { data } = event;
-            console.log('🔄 Syncing workspace member creation:', data.user_id);
             
             await prisma.workspaceMember.create({
                 data: {
@@ -201,14 +183,58 @@ const syncWorkspaceMemberCreation = inngest.createFunction(
                 }
             });
             
-            console.log('✅ Workspace member created successfully');
             return { success: true, memberId: data.user_id };
         } catch (error) {
-            console.error('❌ Failed to create workspace member:', error);
+            console.error('Failed to create workspace member:', error);
             throw error;
         }
     }
 );
+
+// Send email on Task creation
+const sendTaskAssignmentEmail = inngest.createFunction(
+    { 
+        id: "send-task-assignment-email",
+        triggers: [{ event: "app/task.assigned" }]  
+    },
+    async ({event, step}) => {
+        const {taskId, origin} = event.data;
+        const task = await prisma.task.findUnique({
+            where: {id: taskId},
+            include: {assignee: true, project: true}
+        })
+
+        await sendEmail({
+            to: task.assignee.email,
+            subject: `New Task Assignment in ${task.project.name}`,
+            body: `Hi ${task.assignee.name}` `${task.title}` //design in process 4
+            `${new Date(task,due_date).toLocaleDateString()}
+            <a href=${origin}> View Task</a>`
+        })
+        if(new Date(task.due_date).toLocaleDateString()!== new Date().toDateString){
+            await step.sleepUntil('wait-for-the-due-date', new Date(task.due_date));
+            await step.run('check-if-task-is-completed', async () =>{
+                const task = await prisma.task.findUnique({
+                    where: {id: taskId},
+                    include: {assignee: true, project:true},
+                })
+                if(!task) return;
+
+                if(task.status !== "DONE"){
+                    await step.run('send-task-reminder-all', async () => {
+                        await sendEmail({
+                            to: task.assignee.email,
+                            subject: `Reminder for ${task.project.name}`,
+                            body: `Reminder for ${task.project.name}
+                            Please make sure to review it and complete it before
+                            the due date.`, //design in process 4
+                        })
+                    })
+                }
+            });
+        }
+    }
+)
 
 export const functions = [
     syncUserCreation,
@@ -217,5 +243,6 @@ export const functions = [
     syncWorkspaceCreation,
     syncWorkspaceUpdation,
     syncWorkspaceDeletion,
-    syncWorkspaceMemberCreation
+    syncWorkspaceMemberCreation,
+    sendTaskAssignmentEmail
 ];
