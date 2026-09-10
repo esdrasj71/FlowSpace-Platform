@@ -86,6 +86,10 @@ export const updateProject = async (req, res) => {
             where: { id }
         });
 
+        if (!id) {
+            return res.status(400).json({ message: 'Project ID is required' });
+        }
+
         if (!existingProject) {
             return res.status(404).json({ message: 'Project not found' });
         }
@@ -115,8 +119,8 @@ export const updateProject = async (req, res) => {
                 status,
                 priority,
                 progress,
-                start_date: start_date ? new Date(start_date) : null,
-                end_date: end_date ? new Date(end_date) : null,
+                start_date: start_date ? new Date(start_date) : undefined,
+                end_date: end_date ? new Date(end_date) : undefined,
             }
         });
 

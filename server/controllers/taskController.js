@@ -94,17 +94,20 @@ export const updateTask = async (req, res) => {
 
         const { title, description, type, status, priority, assigneeId, due_date } = req.body;
 
+        const updateData = {};
+        if (title !== undefined) updateData.title = title;
+        if (description !== undefined) updateData.description = description;
+        if (type !== undefined) updateData.type = type;
+        if (status !== undefined) updateData.status = status;
+        if (priority !== undefined) updateData.priority = priority;
+        if (assigneeId !== undefined) updateData.assigneeId = assigneeId || null;
+        if (due_date !== undefined && due_date !== null && due_date !== '') {
+            updateData.due_date = new Date(due_date);
+        }
+
         const updatedTask = await prisma.task.update({
             where: { id },
-            data: {
-                title,
-                description,
-                type,
-                status,
-                priority,
-                assigneeId,
-                due_date: due_date ? new Date(due_date) : null,
-            },
+            data: updateData,
             include: { assignee: true }
         });
 
@@ -119,30 +122,30 @@ export const updateTask = async (req, res) => {
 // Delete Task
 export const deleteTask = async (req, res) => {
     try {
+        const { userId } = await req.auth();
         
-        const {userId} = await req.auth();
-        const { tasksIds } = req.body
+        const tasksIds = req.query.ids?.split(',') || [];
 
-        if(!tasksIds || tasks.length === 0){
-            return res.status(404).json({message: "Task not found"});
-        }  
+        if (!tasksIds || tasksIds.length === 0) {
+            return res.status(400).json({ message: "No task IDs provided" });
+        }
 
         const tasks = await prisma.task.findMany({
-            where: {id: {in: tasksIds}}
-        })
-          
+            where: { id: { in: tasksIds } }
+        });
+
         if (tasks.length === 0) {
             return res.status(404).json({ message: "Tasks not found" });
         }
-       
+
         const project = await prisma.project.findUnique({
-            where: {id: tasks[0].projectId},
-            include: {members: {include: {user: true}}}
-        })
+            where: { id: tasks[0].projectId },
+            include: { members: { include: { user: true } } }
+        });
 
         if (!project) {
-            return res.status(404).json({message: 'Project not found'});
-        } 
+            return res.status(404).json({ message: 'Project not found' });
+        }
 
         const workspace = await prisma.workspace.findUnique({
             where: { id: project.workspaceId },
@@ -153,18 +156,16 @@ export const deleteTask = async (req, res) => {
         const isTeamLead = project.team_lead === userId;
 
         if (!isAdmin && !isTeamLead) {
-            return res.status(403).json({ message: 'Access denied - You do not have permission to delete tasks in this project' });
+            return res.status(403).json({ message: 'Access denied' });
         }
 
-        // Delete tasks
         await prisma.task.deleteMany({
-            where: {id: {in: tasksIds}}
-        })
-         
-        res.json({message: "Task(s) deleted successfully"})
+            where: { id: { in: tasksIds } }
+        });
 
-    }
-    catch (error) {
+        res.json({ message: "Task(s) deleted successfully" });
+
+    } catch (error) {
         console.log(error);
         res.status(500).json({ message: error.message || 'Internal server error' });
     }
