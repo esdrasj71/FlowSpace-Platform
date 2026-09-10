@@ -5,6 +5,6 @@ const projectRouter = express.Router();
 
 projectRouter.post('/', createProject);
 projectRouter.put('/', updateProject);
-projectRouter.post('/:project_id/addMember', addMemberToProject);
+projectRouter.post('/:projectId/addMember', addMemberToProject);
 
 export default projectRouter;   

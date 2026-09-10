@@ -86,7 +86,6 @@ const ProjectTasks = ({ tasks }) => {
         const token = await getToken();
         toast.loading("Deleting tasks...");
 
-        // ✅ Send IDs as query params — this ensures headers aren't dropped
         await api.delete(
             `/api/tasks/delete?ids=${selectedTasks.join(',')}`,
             { headers: { Authorization: `Bearer ${token}` } }
